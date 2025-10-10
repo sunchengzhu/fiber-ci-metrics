@@ -1,66 +1,77 @@
 <!doctype html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>Fiber Daily Performance Metrics</title>
-  <style>
-    body {
-      font-family: system-ui, sans-serif;
-      padding: 30px;
-      background: #f7f9fb;
-      color: #222;
-    }
-    h1 {
-      margin-bottom: 20px;
-      font-size: 24px;
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      background: white;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    }
-    th, td {
-      border: 1px solid #e0e0e0;
-      padding: 8px 10px;
-      text-align: center;
-    }
-    th {
-      background: #f2f4f6;
-      font-weight: 600;
-    }
-    tr:nth-child(even) {
-      background: #fafafa;
-    }
-    td:last-child {
-      font-weight: 600;
-    }
-    td.positive {
-      color: #008a2e;
-    }
-    td.negative {
-      color: #d43c3c;
-    }
-  </style>
+    <meta charset="utf-8">
+    <title>Fiber Daily Performance Metrics</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            padding: 30px;
+            background: #f7f9fb;
+            color: #222;
+        }
+        h1 {
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        p.subtitle {
+            color: #555;
+            font-size: 14px;
+            font-style: italic;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        th, td {
+            border: 1px solid #e0e0e0;
+            padding: 8px 10px;
+            text-align: center;
+        }
+        th {
+            background: #f2f4f6;
+            font-weight: 600;
+        }
+        tr:nth-child(even) {
+            background: #fafafa;
+        }
+        td:last-child {
+            font-weight: 600;
+        }
+        td.positive {
+            color: #008a2e;
+        }
+        td.negative {
+            color: #d43c3c;
+        }
+    </style>
 </head>
 <body>
-  <h1>🧵 Fiber Daily Performance Metrics</h1>
+<h1>🧵 Fiber Daily Performance Metrics</h1>
+<p class="subtitle">
+    <strong>TPS</strong> represents the best throughput (transactions per second) achieved during the benchmark,
+    while <strong>Threads</strong> indicates the number of concurrent threads used to reach that TPS.
+</p>
 
-  <table id="data-table">
+<table id="data-table">
     <thead>
-      <tr>
+    <tr>
         <th>Date</th>
-        <th>Timestamp (UTC+8)</th>
+        <th>Test End Time (UTC+8)</th>
         <th>FNN Version</th>
         <th>Threads</th>
         <th>TPS</th>
         <th>% Change</th>
-      </tr>
+    </tr>
     </thead>
     <tbody></tbody>
-  </table>
+</table>
 
-  <script>
+<script>
   async function loadData() {
     const url =
       "https://efjpttqncntihjbnvpdi.supabase.co/rest/v1/ci_metrics" +
@@ -79,7 +90,7 @@
           const dateOnly =
             r.measured_date ||
             new Date(r.measured_at).toISOString().slice(0, 10);
-          const timestamp = new Date(r.measured_at).toLocaleString("zh-CN", {
+          const timestamp = new Date(r.measured_at).toLocaleString("en-US", {
             timeZone: "Asia/Shanghai",
           });
           const fnnVer = r.fnn_version || "—";
@@ -87,8 +98,8 @@
             r.pct_change == null
               ? "—"
               : (r.pct_change > 0
-                  ? `<span class='positive'>+${r.pct_change.toFixed(3)}%</span>`
-                  : `<span class='negative'>${r.pct_change.toFixed(3)}%</span>`);
+                ? `<span class='positive'>+${r.pct_change.toFixed(3)}%</span>`
+                : `<span class='negative'>${r.pct_change.toFixed(3)}%</span>`);
           return `
             <tr>
               <td>${dateOnly}</td>
@@ -106,9 +117,9 @@
     }
   }
 
-  // 初次加载 + 每 60 秒自动刷新
+  // Initial load + auto refresh every 60s
   loadData();
   setInterval(loadData, 60000);
-  </script>
+</script>
 </body>
 </html>
