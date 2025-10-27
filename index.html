@@ -63,6 +63,7 @@
         <th>Date</th>
         <th>Test End Time (UTC+8)</th>
         <th>FNN Version</th>
+        <th>Attempt</th>
         <th>Threads</th>
         <th>TPS</th>
         <th>% Change</th>
@@ -75,7 +76,7 @@
   async function loadData() {
     const url =
       "https://efjpttqncntihjbnvpdi.supabase.co/rest/v1/ci_metrics" +
-      "?select=measured_at,measured_date,threads,tps,pct_change,fnn_version" +
+      "?select=measured_at,measured_date,attempt,threads,tps,pct_change,fnn_version" +
       "&order=measured_at.desc" +
       "&apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmanB0dHFuY250aWhqYm52cGRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5ODY3NjIsImV4cCI6MjA3NTU2Mjc2Mn0.tgSuUx82oCi19PRvC4DSZ6cz-Uq6-40cmSjrhYbj2yo";
 
@@ -94,6 +95,7 @@
             timeZone: "Asia/Shanghai",
           });
           const fnnVer = r.fnn_version || "—";
+          const attempt = r.attempt != null ? r.attempt : "—";
           const pct =
             r.pct_change == null
               ? "—"
@@ -105,6 +107,7 @@
               <td>${dateOnly}</td>
               <td>${timestamp}</td>
               <td>${fnnVer}</td>
+              <td>${attempt}</td>
               <td>${r.threads}</td>
               <td>${r.tps.toFixed(2)}</td>
               <td>${pct}</td>
