@@ -10,10 +10,12 @@
             background: #f7f9fb;
             color: #222;
         }
+
         h1 {
             margin-bottom: 10px;
             font-size: 24px;
         }
+
         p.subtitle {
             color: #555;
             font-size: 14px;
@@ -21,30 +23,37 @@
             margin-top: 0;
             margin-bottom: 20px;
         }
+
         table {
             border-collapse: collapse;
             width: 100%;
             background: white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
         }
+
         th, td {
             border: 1px solid #e0e0e0;
             padding: 8px 10px;
             text-align: center;
         }
+
         th {
             background: #f2f4f6;
             font-weight: 600;
         }
+
         tr:nth-child(even) {
             background: #fafafa;
         }
+
         td:last-child {
             font-weight: 600;
         }
+
         td.positive {
             color: #008a2e;
         }
+
         td.negative {
             color: #d43c3c;
         }
@@ -63,6 +72,7 @@
         <th>Date</th>
         <th>Test End Time (UTC+8)</th>
         <th>FNN Version</th>
+        <th>Channels</th>
         <th>Attempt</th>
         <th>Threads</th>
         <th>TPS</th>
@@ -76,7 +86,7 @@
   async function loadData() {
     const url =
       "https://efjpttqncntihjbnvpdi.supabase.co/rest/v1/ci_metrics" +
-      "?select=measured_at,measured_date,attempt,threads,tps,pct_change,fnn_version" +
+      "?select=measured_at,measured_date,attempt,threads,tps,pct_change,fnn_version,open_channel_count" +
       "&order=measured_at.desc" +
       "&limit=20" +
       "&apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmanB0dHFuY250aWhqYm52cGRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5ODY3NjIsImV4cCI6MjA3NTU2Mjc2Mn0.tgSuUx82oCi19PRvC4DSZ6cz-Uq6-40cmSjrhYbj2yo";
@@ -96,6 +106,7 @@
             timeZone: "Asia/Shanghai",
           });
           const fnnVer = r.fnn_version || "—";
+          const channels = r.open_channel_count != null ? r.open_channel_count : "—";
           const attempt = r.attempt != null ? r.attempt : "—";
           const pct =
             r.pct_change == null
@@ -108,6 +119,7 @@
               <td>${dateOnly}</td>
               <td>${timestamp}</td>
               <td>${fnnVer}</td>
+              <td>${channels}</td>
               <td>${attempt}</td>
               <td>${r.threads}</td>
               <td>${r.tps.toFixed(2)}</td>
