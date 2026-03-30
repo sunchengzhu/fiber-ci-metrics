@@ -72,8 +72,9 @@
         <th>Test End Time (UTC+8)</th>
         <th>FNN Version</th>
         <th>Channels</th>
-        <th>Threads</th>
+        <th>Invoice Threads</th>
         <th>Invoice TPS</th>
+        <th>Threads</th>
         <th>TPS</th>
         <th>% Change</th>
     </tr>
@@ -85,7 +86,7 @@
   async function loadData() {
     const url =
       "https://efjpttqncntihjbnvpdi.supabase.co/rest/v1/ci_metrics" +
-      "?select=measured_at,measured_date,threads,tps,invoice_tps,pct_change,fnn_version,open_channel_count" +
+      "?select=measured_at,measured_date,threads,tps,invoice_threads,invoice_tps,pct_change,fnn_version,open_channel_count" +
       "&order=measured_at.desc" +
       "&limit=20" +
       "&apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmanB0dHFuY250aWhqYm52cGRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5ODY3NjIsImV4cCI6MjA3NTU2Mjc2Mn0.tgSuUx82oCi19PRvC4DSZ6cz-Uq6-40cmSjrhYbj2yo";
@@ -106,6 +107,7 @@
           });
           const fnnVer = r.fnn_version || "—";
           const channels = r.open_channel_count != null ? r.open_channel_count : "—";
+          const invoiceThreads = r.invoice_threads != null ? r.invoice_threads : "—";
           const invoiceTps = r.invoice_tps != null ? r.invoice_tps.toFixed(2) : "—";
           const pct =
             r.pct_change == null
@@ -119,8 +121,9 @@
               <td>${timestamp}</td>
               <td>${fnnVer}</td>
               <td>${channels}</td>
-              <td>${r.threads}</td>
+              <td>${invoiceThreads}</td>
               <td>${invoiceTps}</td>
+              <td>${r.threads}</td>
               <td>${r.tps.toFixed(2)}</td>
               <td>${pct}</td>
             </tr>`;
