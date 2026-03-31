@@ -59,6 +59,10 @@
         td.negative {
             color: #d43c3c;
         }
+
+        td.muted {
+            color: #999;
+        }
     </style>
 </head>
 <body>
@@ -124,8 +128,8 @@
               <td>${timestamp}</td>
               <td>${fnnVer}</td>
               <td>${channels}</td>
-              <td>${invoiceThreads}</td>
-              <td>${invoiceTps}</td>
+              <td class="muted">${invoiceThreads}</td>
+              <td class="muted">${invoiceTps}</td>
               <td>${r.threads}</td>
               <td>${r.tps.toFixed(2)}</td>
               <td>${pct}</td>
