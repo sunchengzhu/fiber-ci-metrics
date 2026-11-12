@@ -116,6 +116,8 @@
           const channels = r.open_channel_count != null ? r.open_channel_count : "—";
           const invoiceThreads = r.invoice_threads != null ? r.invoice_threads : "—";
           const invoiceTps = r.invoice_tps != null ? r.invoice_tps.toFixed(2) : "—";
+          const threads = r.threads != null ? r.threads : "—";
+          const tps = r.tps != null ? r.tps.toFixed(2) : "—";
           const pct =
             r.pct_change == null
               ? "—"
@@ -130,8 +132,8 @@
               <td>${channels}</td>
               <td class="muted">${invoiceThreads}</td>
               <td class="muted">${invoiceTps}</td>
-              <td>${r.threads}</td>
-              <td>${r.tps.toFixed(2)}</td>
+              <td>${threads}</td>
+              <td>${tps}</td>
               <td>${pct}</td>
             </tr>`;
         })
