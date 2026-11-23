@@ -201,18 +201,23 @@
       }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
+      const runCountByDate = new Map();
+      for (const { measured_date: date } of data) {
+        runCountByDate.set(date, (runCountByDate.get(date) ?? 0) + 1);
+      }
+      const runsOnRepeatedDates = data.filter(record => runCountByDate.get(record.measured_date) > 1);
       const tbody = table.tBodies[0];
       tbody.replaceChildren();
       const labels = { manual: "Manual", nightly: "Nightly" };
-      for (const record of data) {
+      for (const record of runsOnRepeatedDates) {
         const row = tbody.insertRow();
         addCell(row, labels[record.run_profile]);
         addMetricCells(row, record);
       }
-      table.hidden = data.length === 0;
-      status.textContent = "No individual runs recorded yet.";
+      table.hidden = runsOnRepeatedDates.length === 0;
+      status.textContent = "No dates with multiple runs in the recent results.";
       status.className = "";
-      status.hidden = data.length > 0;
+      status.hidden = !table.hidden;
     } catch (err) {
       status.textContent = `Unable to load individual runs (${err.message}).`;
       status.className = "load-error";
