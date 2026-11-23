@@ -140,9 +140,12 @@
       "&apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmanB0dHFuY250aWhqYm52cGRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5ODY3NjIsImV4cCI6MjA3NTU2Mjc2Mn0.tgSuUx82oCi19PRvC4DSZ6cz-Uq6-40cmSjrhYbj2yo";
 
   const runHistoryUrl = new URL(dailyUrl);
+  const runHistoryDisplayLimit = 10;
+  const runHistoryPageSize = 50;
   runHistoryUrl.pathname = "/rest/v1/ci_metrics_runs";
   runHistoryUrl.searchParams.set("select", "github_run_id,github_run_attempt,run_profile,measured_at,measured_date,threads,tps,invoice_threads,invoice_tps,fnn_version,open_channel_count");
   runHistoryUrl.searchParams.set("order", "measured_at.desc,github_run_id.desc,github_run_attempt.desc");
+  runHistoryUrl.searchParams.set("limit", runHistoryPageSize);
 
   function addCell(row, value, className = "") {
     const cell = row.insertCell();
@@ -192,30 +195,52 @@
     const status = document.getElementById("run-history-status");
     const table = document.getElementById("run-history-table");
     try {
-      const res = await fetch(runHistoryUrl);
-      if (res.status === 404) {
-        status.textContent = "Individual runs are not available yet.";
-        status.className = "";
-        status.hidden = false;
-        return;
+      const pageUrl = new URL(runHistoryUrl);
+      const runsOnRepeatedDates = [];
+      const seenRuns = new Set();
+      let previousRun;
+      let runsOnDate = 0;
+      for (let offset = 0; runsOnRepeatedDates.length < runHistoryDisplayLimit; offset += runHistoryPageSize) {
+        pageUrl.searchParams.set("offset", offset);
+        const res = await fetch(pageUrl);
+        if (res.status === 404) {
+          status.textContent = "Individual runs are not available yet.";
+          status.className = "";
+          status.hidden = false;
+          return;
+        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        for (const record of data) {
+          const runKey = `${record.github_run_id}/${record.github_run_attempt}`;
+          if (seenRuns.has(runKey)) continue;
+          seenRuns.add(runKey);
+
+          // Results for each Beijing date are consecutive in end-time order.
+          if (record.measured_date === previousRun?.measured_date) {
+            if (runsOnDate === 1) runsOnRepeatedDates.push(previousRun);
+            runsOnRepeatedDates.push(record);
+            runsOnDate += 1;
+          } else {
+            runsOnDate = 1;
+          }
+          previousRun = record;
+          if (runsOnRepeatedDates.length >= runHistoryDisplayLimit) break;
+        }
+        if (data.length < runHistoryPageSize) break;
       }
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      const runCountByDate = new Map();
-      for (const { measured_date: date } of data) {
-        runCountByDate.set(date, (runCountByDate.get(date) ?? 0) + 1);
-      }
-      const runsOnRepeatedDates = data.filter(record => runCountByDate.get(record.measured_date) > 1);
+      const visibleRuns = runsOnRepeatedDates.slice(0, runHistoryDisplayLimit);
       const tbody = table.tBodies[0];
       tbody.replaceChildren();
       const labels = { manual: "Manual", nightly: "Nightly" };
-      for (const record of runsOnRepeatedDates) {
+      for (const record of visibleRuns) {
         const row = tbody.insertRow();
         addCell(row, labels[record.run_profile]);
         addMetricCells(row, record);
       }
-      table.hidden = runsOnRepeatedDates.length === 0;
-      status.textContent = "No dates with multiple runs in the recent results.";
+      table.hidden = visibleRuns.length === 0;
+      status.textContent = "No dates with multiple runs yet.";
       status.className = "";
       status.hidden = !table.hidden;
     } catch (err) {
