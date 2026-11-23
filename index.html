@@ -27,6 +27,11 @@
             margin-bottom: 20px;
         }
 
+        .section-nav {
+            font-size: 14px;
+            margin: 0 0 12px;
+        }
+
         table {
             border-collapse: collapse;
             background: white;
@@ -63,6 +68,20 @@
         td.muted {
             color: #999;
         }
+
+        #individual-runs {
+            margin-top: 24px;
+            max-width: 100%;
+            overflow-x: auto;
+        }
+
+        #individual-runs h2 {
+            font-size: 18px;
+        }
+
+        .load-error {
+            color: #d43c3c;
+        }
     </style>
 </head>
 <body>
@@ -71,6 +90,7 @@
     <strong>TPS</strong> represents the best throughput (transactions per second) achieved during the benchmark,
     while <strong>Threads</strong> indicates the number of concurrent threads used to reach that TPS.
 </p>
+<p class="section-nav"><a href="#individual-runs">Days with Multiple Runs</a></p>
 
 <table id="data-table">
     <thead>
@@ -88,65 +108,155 @@
     </thead>
     <tbody></tbody>
 </table>
+<p id="daily-status" class="load-error" role="status" hidden></p>
+
+<section id="individual-runs" aria-labelledby="individual-runs-heading">
+    <h2 id="individual-runs-heading">Days with Multiple Runs</h2>
+    <table id="run-history-table" aria-labelledby="individual-runs-heading" hidden>
+        <thead>
+        <tr>
+            <th>Run Type</th>
+            <th>Date</th>
+            <th>Test End Time (UTC+8)</th>
+            <th>FNN Version</th>
+            <th>Channels</th>
+            <th>Invoice Threads</th>
+            <th>Invoice TPS</th>
+            <th>Keysend Threads</th>
+            <th>Keysend TPS</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <p id="run-history-status" role="status">Loading run history…</p>
+</section>
 
 <script>
-  async function loadData() {
-    const url =
+  const dailyUrl =
       "https://efjpttqncntihjbnvpdi.supabase.co/rest/v1/ci_metrics" +
       "?select=measured_at,measured_date,threads,tps,invoice_threads,invoice_tps,pct_change,fnn_version,open_channel_count" +
       "&order=measured_at.desc" +
       "&limit=22" +
       "&apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmanB0dHFuY250aWhqYm52cGRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5ODY3NjIsImV4cCI6MjA3NTU2Mjc2Mn0.tgSuUx82oCi19PRvC4DSZ6cz-Uq6-40cmSjrhYbj2yo";
 
+  const runHistoryUrl = new URL(dailyUrl);
+  const runHistoryDisplayLimit = 10;
+  const runHistoryPageSize = 50;
+  runHistoryUrl.pathname = "/rest/v1/ci_metrics_runs";
+  runHistoryUrl.searchParams.set("select", "github_run_id,github_run_attempt,run_profile,measured_at,measured_date,threads,tps,invoice_threads,invoice_tps,fnn_version,open_channel_count");
+  runHistoryUrl.searchParams.set("order", "measured_at.desc,github_run_id.desc,github_run_attempt.desc");
+  runHistoryUrl.searchParams.set("limit", runHistoryPageSize);
+
+  function addCell(row, value, className = "") {
+    const cell = row.insertCell();
+    cell.textContent = value ?? "—";
+    cell.className = className;
+    return cell;
+  }
+
+  function addMetricCells(row, record, invoiceClass = "") {
+    const measuredAt = new Date(record.measured_at);
+    addCell(row, record.measured_date || measuredAt.toISOString().slice(0, 10));
+    addCell(row, measuredAt.toLocaleString("en-US", { timeZone: "Asia/Shanghai" }));
+    addCell(row, record.fnn_version || "—");
+    addCell(row, record.open_channel_count);
+    addCell(row, record.invoice_threads, invoiceClass);
+    addCell(row, record.invoice_tps?.toFixed(2), invoiceClass);
+    addCell(row, record.threads);
+    addCell(row, record.tps?.toFixed(2));
+  }
+
+  async function loadData() {
+    const status = document.getElementById("daily-status");
     try {
-      const res = await fetch(url);
+      const res = await fetch(dailyUrl);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-
       const tbody = document.querySelector("#data-table tbody");
-      tbody.innerHTML = data
-        .map((r) => {
-          const dateOnly =
-            r.measured_date ||
-            new Date(r.measured_at).toISOString().slice(0, 10);
-          const timestamp = new Date(r.measured_at).toLocaleString("en-US", {
-            timeZone: "Asia/Shanghai",
-          });
-          const fnnVer = r.fnn_version || "—";
-          const channels = r.open_channel_count != null ? r.open_channel_count : "—";
-          const invoiceThreads = r.invoice_threads != null ? r.invoice_threads : "—";
-          const invoiceTps = r.invoice_tps != null ? r.invoice_tps.toFixed(2) : "—";
-          const threads = r.threads != null ? r.threads : "—";
-          const tps = r.tps != null ? r.tps.toFixed(2) : "—";
-          const pct =
-            r.pct_change == null
-              ? "—"
-              : (r.pct_change > 0
-                ? `<span class='positive'>+${r.pct_change.toFixed(3)}%</span>`
-                : `<span class='negative'>${r.pct_change.toFixed(3)}%</span>`);
-          return `
-            <tr>
-              <td>${dateOnly}</td>
-              <td>${timestamp}</td>
-              <td>${fnnVer}</td>
-              <td>${channels}</td>
-              <td class="muted">${invoiceThreads}</td>
-              <td class="muted">${invoiceTps}</td>
-              <td>${threads}</td>
-              <td>${tps}</td>
-              <td>${pct}</td>
-            </tr>`;
-        })
-        .join("");
+      tbody.replaceChildren();
+      for (const record of data) {
+        const row = tbody.insertRow();
+        addMetricCells(row, record, "muted");
+        const change = record.pct_change;
+        if (change == null) {
+          addCell(row, null);
+        } else {
+          addCell(row, `${change > 0 ? "+" : ""}${change.toFixed(3)}%`, change > 0 ? "positive" : "negative");
+        }
+      }
+      status.hidden = true;
     } catch (err) {
-      document.body.innerHTML += `<p style="color:red">Error: ${err.message}</p>`;
-      console.error(err);
+      status.textContent = `Unable to load daily metrics (${err.message}).`;
+      status.hidden = false;
     }
   }
 
-  // Initial load + auto refresh every 60s
-  loadData();
-  setInterval(loadData, 60000);
+  async function loadRunHistory() {
+    const status = document.getElementById("run-history-status");
+    const table = document.getElementById("run-history-table");
+    try {
+      const pageUrl = new URL(runHistoryUrl);
+      const runsOnRepeatedDates = [];
+      const seenRuns = new Set();
+      let previousRun;
+      let runsOnDate = 0;
+      for (let offset = 0; runsOnRepeatedDates.length < runHistoryDisplayLimit; offset += runHistoryPageSize) {
+        pageUrl.searchParams.set("offset", offset);
+        const res = await fetch(pageUrl);
+        if (res.status === 404) {
+          status.textContent = "Run history is not available yet.";
+          status.className = "";
+          status.hidden = false;
+          return;
+        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        for (const record of data) {
+          const runKey = `${record.github_run_id}/${record.github_run_attempt}`;
+          if (seenRuns.has(runKey)) continue;
+          seenRuns.add(runKey);
+
+          // Results for each Beijing date are consecutive in end-time order.
+          if (record.measured_date === previousRun?.measured_date) {
+            if (runsOnDate === 1) runsOnRepeatedDates.push(previousRun);
+            runsOnRepeatedDates.push(record);
+            runsOnDate += 1;
+          } else {
+            runsOnDate = 1;
+          }
+          previousRun = record;
+          if (runsOnRepeatedDates.length >= runHistoryDisplayLimit) break;
+        }
+        if (data.length < runHistoryPageSize) break;
+      }
+      const visibleRuns = runsOnRepeatedDates.slice(0, runHistoryDisplayLimit);
+      const tbody = table.tBodies[0];
+      tbody.replaceChildren();
+      const labels = { manual: "Manual", nightly: "Nightly" };
+      for (const record of visibleRuns) {
+        const row = tbody.insertRow();
+        addCell(row, labels[record.run_profile]);
+        addMetricCells(row, record);
+      }
+      table.hidden = visibleRuns.length === 0;
+      status.textContent = "No days with multiple runs yet.";
+      status.className = "";
+      status.hidden = !table.hidden;
+    } catch (err) {
+      status.textContent = `Unable to load run history (${err.message}).`;
+      status.className = "load-error";
+      status.hidden = false;
+    }
+  }
+
+  function refresh() {
+    loadData();
+    loadRunHistory();
+  }
+
+  refresh();
+  setInterval(refresh, 60000);
 </script>
 </body>
 </html>
