@@ -90,7 +90,7 @@
     <strong>TPS</strong> represents the best throughput (transactions per second) achieved during the benchmark,
     while <strong>Threads</strong> indicates the number of concurrent threads used to reach that TPS.
 </p>
-<p class="section-nav"><a href="#individual-runs">Individual Runs</a></p>
+<p class="section-nav"><a href="#individual-runs">Days with Multiple Runs</a></p>
 
 <table id="data-table">
     <thead>
@@ -111,7 +111,7 @@
 <p id="daily-status" class="load-error" role="status" hidden></p>
 
 <section id="individual-runs" aria-labelledby="individual-runs-heading">
-    <h2 id="individual-runs-heading">Individual Runs</h2>
+    <h2 id="individual-runs-heading">Days with Multiple Runs</h2>
     <table id="run-history-table" aria-labelledby="individual-runs-heading" hidden>
         <thead>
         <tr>
@@ -128,7 +128,7 @@
         </thead>
         <tbody></tbody>
     </table>
-    <p id="run-history-status" role="status">Loading individual runs…</p>
+    <p id="run-history-status" role="status">Loading run history…</p>
 </section>
 
 <script>
@@ -204,7 +204,7 @@
         pageUrl.searchParams.set("offset", offset);
         const res = await fetch(pageUrl);
         if (res.status === 404) {
-          status.textContent = "Individual runs are not available yet.";
+          status.textContent = "Run history is not available yet.";
           status.className = "";
           status.hidden = false;
           return;
@@ -240,11 +240,11 @@
         addMetricCells(row, record);
       }
       table.hidden = visibleRuns.length === 0;
-      status.textContent = "No dates with multiple runs yet.";
+      status.textContent = "No days with multiple runs yet.";
       status.className = "";
       status.hidden = !table.hidden;
     } catch (err) {
-      status.textContent = `Unable to load individual runs (${err.message}).`;
+      status.textContent = `Unable to load run history (${err.message}).`;
       status.className = "load-error";
       status.hidden = false;
     }
