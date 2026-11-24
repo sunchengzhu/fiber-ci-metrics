@@ -1,11 +1,18 @@
 <!doctype html>
-<html>
+<html lang="zh-CN">
 <head>
     <meta charset="utf-8">
-    <title>Fiber Daily Performance Metrics</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Fiber 每日性能指标</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: system-ui, sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
             padding: 30px;
             background: #f7f9fb;
             color: #222;
@@ -14,34 +21,57 @@
             align-items: center;
         }
 
+        .page-header {
+            max-width: 900px;
+            text-align: center;
+        }
+
         h1 {
-            margin-bottom: 10px;
+            margin: 0 0 10px;
             font-size: 24px;
         }
 
         p.subtitle {
             color: #555;
-            font-size: 14px;
-            font-style: italic;
-            margin-top: 0;
-            margin-bottom: 20px;
+            font-size: 16px;
+            line-height: 1.7;
+            margin: 0 0 20px;
         }
 
-        .section-nav {
+        p.table-note {
+            color: #666;
             font-size: 14px;
-            margin: 0 0 12px;
+            line-height: 1.6;
+            margin: -12px 0 16px;
+        }
+
+        .metrics-content {
+            width: fit-content;
+            max-width: 1440px;
+        }
+
+        .table-scroll {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+            background: #fff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
         }
 
         table {
+            width: 100%;
             border-collapse: collapse;
-            background: white;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            background: #fff;
         }
 
         th, td {
             border: 1px solid #e0e0e0;
             padding: 8px 10px;
             text-align: center;
+        }
+
+        td {
+            white-space: nowrap;
         }
 
         th {
@@ -66,70 +96,122 @@
         }
 
         td.muted {
-            color: #999;
+            color: #777;
+        }
+
+        .execution-reason-heading {
+            min-width: 320px;
+        }
+
+        td.execution-reason {
+            min-width: 320px;
+            max-width: 420px;
+            white-space: normal;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 400;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
         }
 
         #individual-runs {
+            width: 100%;
             margin-top: 24px;
-            max-width: 100%;
-            overflow-x: auto;
         }
 
         #individual-runs h2 {
+            margin: 0 0 8px;
             font-size: 18px;
         }
 
+        .section-description {
+            margin: 0 0 12px;
+            color: #555;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
         .load-error {
-            color: #d43c3c;
+            color: #b42323;
+        }
+
+        @media (max-width: 1399px) {
+            .metrics-content {
+                width: min-content;
+                max-width: calc(100vw - 60px);
+            }
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 20px 16px;
+            }
+
+            .metrics-content {
+                width: 100%;
+                max-width: 100%;
+            }
         }
     </style>
 </head>
 <body>
-<h1>🧵 Fiber Daily Performance Metrics</h1>
-<p class="subtitle">
-    <strong>TPS</strong> represents the best throughput (transactions per second) achieved during the benchmark,
-    while <strong>Threads</strong> indicates the number of concurrent threads used to reach that TPS.
-</p>
-<p class="section-nav"><a href="#individual-runs">Days with Multiple Runs</a></p>
+<header class="page-header">
+    <h1>Fiber 每日性能指标</h1>
+    <p class="subtitle">
+        并发线程数范围为 2～150，每档压测 3 分钟；表中记录最高平均 TPS 及对应线程数。
+    </p>
+    <p class="table-note">
+        <em>Threads 和 TPS 分别为 Keysend Threads 和 Keysend TPS 的简写</em>
+    </p>
+</header>
 
-<table id="data-table">
-    <thead>
-    <tr>
-        <th>Date</th>
-        <th>Test End Time (UTC+8)</th>
-        <th>FNN Version</th>
-        <th>Channels</th>
-        <th>Invoice Threads</th>
-        <th>Invoice TPS</th>
-        <th>Threads</th>
-        <th>TPS</th>
-        <th>% Change</th>
-    </tr>
-    </thead>
-    <tbody></tbody>
-</table>
-<p id="daily-status" class="load-error" role="status" hidden></p>
+<main class="metrics-content">
+    <div class="table-scroll">
+        <table id="data-table" aria-label="每日最佳性能测试结果">
+            <thead>
+            <tr>
+                <th>Date</th>
+                <th>Test End Time (UTC+8)</th>
+                <th>FNN Version</th>
+                <th>Channels</th>
+                <th>Invoice Threads</th>
+                <th>Invoice TPS</th>
+                <th>Threads</th>
+                <th>TPS</th>
+                <th>% Change</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    <p id="daily-status" class="load-error" role="status" hidden></p>
 
-<section id="individual-runs" aria-labelledby="individual-runs-heading">
-    <h2 id="individual-runs-heading">Days with Multiple Runs</h2>
-    <table id="run-history-table" aria-labelledby="individual-runs-heading" hidden>
-        <thead>
-        <tr>
-            <th>Run Type</th>
-            <th>Date</th>
-            <th>Test End Time (UTC+8)</th>
-            <th>FNN Version</th>
-            <th>Channels</th>
-            <th>Invoice Threads</th>
-            <th>Invoice TPS</th>
-            <th>Keysend Threads</th>
-            <th>Keysend TPS</th>
-        </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-    <p id="run-history-status" role="status">Loading run history…</p>
-</section>
+    <section id="individual-runs" aria-labelledby="individual-runs-heading">
+        <h2 id="individual-runs-heading">同日多次测试记录</h2>
+        <p id="individual-runs-description" class="section-description">
+            同一天选择保留的测试数据达到两份及以上时，会展示对应的运行记录。
+        </p>
+        <div class="table-scroll">
+            <table id="run-history-table" aria-labelledby="individual-runs-heading" aria-describedby="individual-runs-description" hidden>
+                <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Date</th>
+                    <th>Test End Time (UTC+8)</th>
+                    <th>FNN Version</th>
+                    <th>Invoice Threads</th>
+                    <th>Invoice TPS</th>
+                    <th>Threads</th>
+                    <th>TPS</th>
+                    <th class="execution-reason-heading">Execution Reason</th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <p id="run-history-status" role="status">正在加载测试运行记录……</p>
+    </section>
+</main>
 
 <script>
   const dailyUrl =
@@ -142,8 +224,10 @@
   const runHistoryUrl = new URL(dailyUrl);
   const runHistoryDisplayLimit = 10;
   const runHistoryPageSize = 50;
+  const runHistorySelect = "github_run_id,github_run_attempt,run_profile,measured_at,measured_date,threads,tps,invoice_threads,invoice_tps,fnn_version,execution_reason";
+  const runHistorySelectWithoutReason = runHistorySelect.replace(",execution_reason", "");
   runHistoryUrl.pathname = "/rest/v1/ci_metrics_runs";
-  runHistoryUrl.searchParams.set("select", "github_run_id,github_run_attempt,run_profile,measured_at,measured_date,threads,tps,invoice_threads,invoice_tps,fnn_version,open_channel_count");
+  runHistoryUrl.searchParams.set("select", runHistorySelect);
   runHistoryUrl.searchParams.set("order", "measured_at.desc,github_run_id.desc,github_run_attempt.desc");
   runHistoryUrl.searchParams.set("limit", runHistoryPageSize);
 
@@ -154,12 +238,21 @@
     return cell;
   }
 
-  function addMetricCells(row, record, invoiceClass = "") {
+  function addMetricCells(row, record, invoiceClass = "", includeChannels = true) {
     const measuredAt = new Date(record.measured_at);
     addCell(row, record.measured_date || measuredAt.toISOString().slice(0, 10));
-    addCell(row, measuredAt.toLocaleString("en-US", { timeZone: "Asia/Shanghai" }));
+    addCell(row, measuredAt.toLocaleString("zh-CN", {
+      timeZone: "Asia/Shanghai",
+      hour12: false,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+    }));
     addCell(row, record.fnn_version || "—");
-    addCell(row, record.open_channel_count);
+    if (includeChannels) addCell(row, record.open_channel_count);
     addCell(row, record.invoice_threads, invoiceClass);
     addCell(row, record.invoice_tps?.toFixed(2), invoiceClass);
     addCell(row, record.threads);
@@ -186,7 +279,7 @@
       }
       status.hidden = true;
     } catch (err) {
-      status.textContent = `Unable to load daily metrics (${err.message}).`;
+      status.textContent = `无法加载每日性能数据（${err.message}）。`;
       status.hidden = false;
     }
   }
@@ -200,11 +293,20 @@
       const seenRuns = new Set();
       let previousRun;
       let runsOnDate = 0;
+      let executionReasonAvailable = true;
       for (let offset = 0; runsOnRepeatedDates.length < runHistoryDisplayLimit; offset += runHistoryPageSize) {
         pageUrl.searchParams.set("offset", offset);
-        const res = await fetch(pageUrl);
+        let res = await fetch(pageUrl);
+        if (res.status === 400 && executionReasonAvailable) {
+          const error = await res.clone().json().catch(() => null);
+          if (["42703", "PGRST204"].includes(error?.code) && error?.message?.includes("execution_reason")) {
+            executionReasonAvailable = false;
+            pageUrl.searchParams.set("select", runHistorySelectWithoutReason);
+            res = await fetch(pageUrl);
+          }
+        }
         if (res.status === 404) {
-          status.textContent = "Run history is not available yet.";
+          status.textContent = "暂未提供测试运行记录。";
           status.className = "";
           status.hidden = false;
           return;
@@ -217,7 +319,7 @@
           if (seenRuns.has(runKey)) continue;
           seenRuns.add(runKey);
 
-          // Results for each Beijing date are consecutive in end-time order.
+          // 同一北京日期的结果按结束时间连续排列。
           if (record.measured_date === previousRun?.measured_date) {
             if (runsOnDate === 1) runsOnRepeatedDates.push(previousRun);
             runsOnRepeatedDates.push(record);
@@ -237,14 +339,15 @@
       for (const record of visibleRuns) {
         const row = tbody.insertRow();
         addCell(row, labels[record.run_profile]);
-        addMetricCells(row, record);
+        addMetricCells(row, record, "", false);
+        addCell(row, record.execution_reason, "execution-reason");
       }
       table.hidden = visibleRuns.length === 0;
-      status.textContent = "No days with multiple runs yet.";
+      status.textContent = "暂无同日多次测试记录。";
       status.className = "";
       status.hidden = !table.hidden;
     } catch (err) {
-      status.textContent = `Unable to load run history (${err.message}).`;
+      status.textContent = `无法加载测试运行记录（${err.message}）。`;
       status.className = "load-error";
       status.hidden = false;
     }
